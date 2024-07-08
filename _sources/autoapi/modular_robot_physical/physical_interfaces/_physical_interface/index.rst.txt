@@ -1,0 +1,112 @@
+:orphan:
+
+:py:mod:`_physical_interface`
+========================================================================
+
+.. py:module:: modular_robot_physical.physical_interfaces._physical_interface
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   modular_robot_physical.physical_interfaces._physical_interface.PhysicalInterface
+
+
+
+
+.. py:class:: PhysicalInterface
+
+
+   Bases: :py:obj:`abc.ABC`
+
+   .. autoapi-inheritance-diagram:: modular_robot_physical.physical_interfaces._physical_interface.PhysicalInterface
+      :parts: 1
+
+   Abstract implementation for interfacing with hardware.
+
+   .. py:method:: set_servo_targets(pins: list[int], targets: list[float]) -> None
+      :abstractmethod:
+
+      Set the target for multiple servos.
+
+      This can be a fairly slow operation.
+
+      :param pins: The GPIO pins.
+      :param targets: The target angles.
+
+
+   .. py:method:: enable() -> None
+      :abstractmethod:
+
+      Start the robot.
+
+
+   .. py:method:: disable() -> None
+      :abstractmethod:
+
+      Set the robot to low power mode.
+
+      This disables all active modules and sensors.
+
+
+   .. py:method:: get_battery_level() -> float
+      :abstractmethod:
+
+      Get the battery level.
+
+      :returns: The battery level as a number between 0.0 and 1.0.
+      :raises NotImplementedError: If getting the battery level is not supported on this hardware.
+
+
+   .. py:method:: get_multiple_servo_positions(pins: Sequence[int]) -> list[float]
+      :abstractmethod:
+
+      Get the current position of multiple servos.
+
+      :param pins: The GPIO pins.
+      :returns: The current positions.
+      :raises NotImplementedError: If getting the servo position is not supported on this hardware.
+
+
+   .. py:method:: get_imu_angular_rate() -> pyrr.Vector3
+      :abstractmethod:
+
+      Get the angular rate from the IMU.
+
+      :returns: The angular rate.
+      :raises NotImplementedError: If the IMU is not supported on this hardware.
+
+
+   .. py:method:: get_imu_orientation() -> pyrr.Vector3
+      :abstractmethod:
+
+      Get the orientation from the IMU.
+
+      :returns: The orientation.
+      :raises NotImplementedError: If the IMU is not supported on this hardware.
+
+
+   .. py:method:: get_imu_specific_force() -> pyrr.Vector3
+      :abstractmethod:
+
+      Get the specific force from the IMU.
+
+      :returns: The specific force.
+      :raises NotImplementedError: If the IMU is not supported on this hardware.
+
+
+   .. py:method:: get_camera_view() -> numpy.typing.NDArray[numpy.uint8]
+      :abstractmethod:
+
+      Get the current view from the camera.
+
+      :return: The camera view.
+      :raises NotImplementedError: If the Camera is not supported on this hardware.
+
+
+

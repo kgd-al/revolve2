@@ -1,0 +1,95 @@
+:orphan:
+
+:py:mod:`_simulation_state`
+============================================
+
+.. py:module:: simulation.scene._simulation_state
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   simulation.scene._simulation_state.SimulationState
+
+
+
+
+.. py:class:: SimulationState
+
+
+   Bases: :py:obj:`abc.ABC`
+
+   .. autoapi-inheritance-diagram:: simulation.scene._simulation_state.SimulationState
+      :parts: 1
+
+   Interface for the state of a simulation at certain point.
+
+   .. py:method:: get_rigid_body_relative_pose(rigid_body: simulation.scene._rigid_body.RigidBody) -> simulation.scene._pose.Pose
+      :abstractmethod:
+
+      Get the pose of a rigid body, relative to its parent multi-body system's reference frame.
+
+      :param rigid_body: The rigid body to get the pose for.
+      :returns: The relative pose.
+
+
+   .. py:method:: get_rigid_body_absolute_pose(rigid_body: simulation.scene._rigid_body.RigidBody) -> simulation.scene._pose.Pose
+      :abstractmethod:
+
+      Get the pose of a rigid body, relative the global reference frame.
+
+      :param rigid_body: The rigid body to get the pose for.
+      :returns: The absolute pose.
+
+
+   .. py:method:: get_multi_body_system_pose(multi_body_system: simulation.scene._multi_body_system.MultiBodySystem) -> simulation.scene._pose.Pose
+      :abstractmethod:
+
+      Get the pose of a multi-body system, relative to the global reference frame.
+
+      :param multi_body_system: The multi-body system to get the pose for.
+      :returns: The relative pose.
+
+
+   .. py:method:: get_hinge_joint_position(joint: simulation.scene._joint_hinge.JointHinge) -> float
+      :abstractmethod:
+
+      Get the rotational position of a hinge joint.
+
+      :param joint: The joint to get the rotational position for.
+      :returns: The rotational position.
+
+
+   .. py:method:: get_imu_specific_force(imu_sensor: simulation.scene.sensors.IMUSensor) -> pyrr.Vector3
+      :abstractmethod:
+
+      Get the specific force measured an IMU.
+
+      :param imu_sensor: The IMU.
+      :returns: The specific force.
+
+
+   .. py:method:: get_imu_angular_rate(imu_sensor: simulation.scene.sensors.IMUSensor) -> pyrr.Vector3
+      :abstractmethod:
+
+      Get the angular rate measured by am IMU.
+
+      :param imu_sensor: The IMU.
+      :returns: The angular rate.
+
+
+   .. py:method:: get_camera_view(camera_sensor: simulation.scene.sensors.CameraSensor) -> numpy.typing.NDArray[numpy.uint8]
+      :abstractmethod:
+
+      Get the camera view.
+
+      :param camera_sensor: The camera.
+      :return: The view.
+
+
+

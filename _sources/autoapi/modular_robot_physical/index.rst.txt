@@ -1,0 +1,154 @@
+:py:mod:`modular_robot_physical`
+================================
+
+.. py:module:: modular_robot_physical
+
+.. autoapi-nested-parse::
+
+   Physical Robot Control and Utils.
+
+
+
+Subpackages
+-----------
+.. toctree::
+   :titlesonly:
+   :maxdepth: 3
+
+   physical_interfaces/index.rst
+   remote/index.rst
+   robot_daemon/index.rst
+   robot_daemon_api/index.rst
+
+
+Package Contents
+----------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   modular_robot_physical.Config
+   modular_robot_physical.HardwareType
+   modular_robot_physical.UUIDKey
+
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   modular_robot_physical.PROTOCOL_VERSION
+   modular_robot_physical.STANDARD_PORT
+
+
+.. py:class:: Config
+
+
+   The configuration for running a physical robot.
+
+   .. py:attribute:: modular_robot
+      :type: revolve2.modular_robot.ModularRobot
+
+      The Modular Robot Object.
+
+
+   .. py:attribute:: hinge_mapping
+      :type: dict[modular_robot_physical._uuid_key.UUIDKey[revolve2.modular_robot.body.base.ActiveHinge], int]
+
+      Hinge mapping: map each active hinge object to a specific Servo with its ID (int).
+
+
+   .. py:attribute:: initial_hinge_positions
+      :type: dict[modular_robot_physical._uuid_key.UUIDKey[revolve2.modular_robot.body.base.ActiveHinge], float]
+
+      Initial positions of the active hinges.
+
+
+   .. py:attribute:: run_duration
+      :type: int
+
+      Duration to run the brain for in seconds.
+
+
+   .. py:attribute:: control_frequency
+      :type: int
+
+      Frequency at which to call the brain control functions in seconds. There currently is a bug where if you set the control frequency to (around) 10 or smaller the program might hang. This is most likely a big in pycapnp and once pycapnp v2 is released this is probably resolved.
+
+
+   .. py:attribute:: inverse_servos
+      :type: dict[int, bool]
+
+      If a servo is mounted in the wrong direction on the body one can fix it by inverting the action.
+      inverse_servos allows you to inverse specific servos with their gpio number as key.
+
+
+
+.. py:class:: HardwareType(*args, **kwds)
+
+
+   Bases: :py:obj:`enum.Enum`
+
+   .. autoapi-inheritance-diagram:: modular_robot_physical.HardwareType
+      :parts: 1
+
+   The types of hardware.
+
+   .. py:attribute:: v1
+
+      
+
+   .. py:attribute:: v2
+
+      
+
+
+.. py:data:: PROTOCOL_VERSION
+   :value: '1.0.2'
+
+   
+
+.. py:data:: STANDARD_PORT
+   :value: 20812
+
+   
+
+.. py:class:: UUIDKey(value: _T)
+
+
+   Bases: :py:obj:`Generic`\ [\ :py:obj:`_T`\ ]
+
+   .. autoapi-inheritance-diagram:: modular_robot_physical.UUIDKey
+      :parts: 1
+
+   Wraps a value and implements __eq__ and __hash__ based purely on id(value).
+
+   .. py:property:: value
+      :type: _T
+
+      Get the wrapped value.
+
+      :returns: The value.
+
+
+   .. py:method:: __eq__(other: object) -> bool
+
+      Compare with another wrapped value using their ids.
+
+      :param other: The object to compare with.
+      :returns: Whether their ids are equal.
+      :raises ValueError: If the other objecgt is not an UUIDKey.
+
+
+   .. py:method:: __hash__() -> int
+
+      Hash this object using its id only.
+
+      :returns: The hash.
+
+
+

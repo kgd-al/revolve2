@@ -1,0 +1,21 @@
+:orphan:
+
+:py:mod:`_standard_port`
+===============================================
+
+.. py:module:: modular_robot_physical._standard_port
+
+.. autoapi-nested-parse::
+
+   The standard port for the communication of physical modular robot with the remote.
+
+
+
+Module Contents
+---------------
+
+.. py:data:: STANDARD_PORT
+   :value: 20812
+
+   
+

@@ -1,0 +1,86 @@
+:orphan:
+
+:py:mod:`_body`
+=======================================
+
+.. py:module:: modular_robot.body.base._body
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   modular_robot.body.base._body.Body
+
+
+
+
+Attributes
+~~~~~~~~~~
+
+.. autoapisummary::
+
+   modular_robot.body.base._body.TModule
+   modular_robot.body.base._body.TModuleNP
+
+
+.. py:data:: TModule
+
+   
+
+.. py:data:: TModuleNP
+
+   
+
+.. py:class:: Body(core: modular_robot.body.base._core.Core)
+
+
+   Body of a modular robot.
+
+   .. py:property:: core
+      :type: modular_robot.body.base._core.Core
+
+      Get the core of the Body.
+
+      :return: The core.
+
+
+   .. py:method:: grid_position(module: modular_robot.body._module.Module) -> pyrr.Vector3
+      :classmethod:
+
+      Calculate the position of this module in a 3d grid with the core as center.
+
+      The distance between all modules is assumed to be one grid cell.
+      All module angles must be multiples of 90 degrees.
+
+      :param module: The module to calculate the position for.
+      :returns: The calculated position.
+      :raises KeyError: In case an attachment point is not found.
+
+
+   .. py:method:: find_modules_of_type(module_type: Type[TModule], exclude: list[Type[TModule]] | None = None) -> list[TModule]
+
+      Find all Modules of a certain type in the robot.
+
+      :param module_type: The type.
+      :param exclude: Module types to be excluded in search.
+      :return: The list of Modules.
+
+
+   .. py:method:: to_grid() -> tuple[numpy.typing.NDArray[TModuleNP], pyrr.Vector3[numpy.int_]]
+
+      Convert the tree structure to a grid.
+
+      The distance between all modules is assumed to be one grid cell.
+      All module angles must be multiples of 90 degrees.
+
+      The grid is indexed depth, width, height, or x, y, z, from the perspective of the core.
+
+      :returns: The created grid with cells set to either a Module or None and a position vector of the core. The position Vector3 is dtype: int.
+
+
+

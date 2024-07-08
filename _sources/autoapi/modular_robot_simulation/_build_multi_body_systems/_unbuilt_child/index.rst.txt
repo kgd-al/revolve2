@@ -1,0 +1,50 @@
+:orphan:
+
+:py:mod:`_unbuilt_child`
+===========================================================================
+
+.. py:module:: modular_robot_simulation._build_multi_body_systems._unbuilt_child
+
+
+Module Contents
+---------------
+
+Classes
+~~~~~~~
+
+.. autoapisummary::
+
+   modular_robot_simulation._build_multi_body_systems._unbuilt_child.UnbuiltChild
+
+
+
+
+.. py:class:: UnbuiltChild
+
+
+   A dataclass to store unbuilt children for the builders.
+
+   .. py:attribute:: child_object
+      :type: revolve2.modular_robot.body.Module | revolve2.modular_robot.body.sensors.Sensor
+
+      
+
+   .. py:attribute:: rigid_body
+      :type: revolve2.simulation.scene.RigidBody
+
+      
+
+   .. py:attribute:: pose
+      :type: revolve2.simulation.scene.Pose
+
+      
+
+   .. py:method:: make_pose(position: pyrr.Vector3, orientation: pyrr.Quaternion = Quaternion()) -> None
+
+      Make the pose of the unbuilt child.
+
+      :param position: The position argument from the parent.
+      :param orientation: The orientation of the attachment on the parent.
+
+
+
