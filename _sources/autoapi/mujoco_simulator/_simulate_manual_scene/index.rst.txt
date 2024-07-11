@@ -1,0 +1,34 @@
+:orphan:
+
+:py:mod:`_simulate_manual_scene`
+=================================================
+
+.. py:module:: mujoco_simulator._simulate_manual_scene
+
+.. autoapi-nested-parse::
+
+   Iterative Scene Simulator.
+
+
+
+Module Contents
+---------------
+
+
+Functions
+~~~~~~~~~
+
+.. autoapisummary::
+
+   mujoco_simulator._simulate_manual_scene.simulate_manual_scene
+
+
+
+.. py:function:: simulate_manual_scene(scene: revolve2.simulation.scene.Scene, render_backend: mujoco_simulator._render_backend.RenderBackend = RenderBackend.GLFW) -> None
+
+   Simulate a scene for checking if a robot was built correctly.
+
+   :param scene: The scene to simulate.
+   :param render_backend: The render backend.
+
+
