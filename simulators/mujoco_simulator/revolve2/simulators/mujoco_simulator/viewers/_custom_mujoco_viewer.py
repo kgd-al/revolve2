@@ -303,19 +303,8 @@ class CustomMujocoViewer(Viewer):
 
         :return: A cycle position if applicable.
         """
-<<<<<<< HEAD
-        mujoco_viewer.MujocoViewer.render(self)
-        if self._viewer_mode == CustomMujocoViewerMode.MANUAL:
-            return self._position
-        return None
-
-    def _increment_position(self) -> None:
-        """Increment our cycle position."""
-        self._position = (self._position + 1) % 5
-=======
         feedback = self._viewer_backend.render()
         return feedback
->>>>>>> 4e58ffa0d7224494ad66644e28e11097c8da6813
 
     def close_viewer(self) -> None:
         """Close the viewer."""
