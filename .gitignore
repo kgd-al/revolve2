@@ -141,3 +141,4 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 /standards/revolve2/standards/morphological_novelty_metric/_calculate_novelty.c
+.python-version
