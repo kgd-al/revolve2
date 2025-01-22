@@ -54,9 +54,9 @@ class OpenGLVision:
         """
         context = self.get_context(open_gl_lib)
         if headless:
-            self._open_gl_context = context.gl_context(*camera.camera_size)
+            self._open_gl_context = context(*camera.camera_size)
             self._open_gl_context.make_current()
-            logging.debug(f"Initialized {OpenGLVision._open_gl_context=}")
+            logging.debug(f"Initialized {self._open_gl_context=}")
 
         self._mujoco_context = mujoco.MjrContext(
             model, mujoco.mjtFontScale.mjFONTSCALE_150.value

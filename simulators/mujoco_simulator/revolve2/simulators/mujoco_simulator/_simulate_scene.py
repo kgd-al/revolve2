@@ -8,6 +8,7 @@ import numpy.typing as npt
 
 from revolve2.simulation.scene import Scene, SimulationState
 from revolve2.simulation.simulator import RecordSettings
+from ._abstraction_to_mujoco_mapping import CameraSensorMujoco
 
 from ._control_interface_impl import ControlInterfaceImpl
 from ._open_gl_vision import OpenGLVision
@@ -71,6 +72,15 @@ def simulate_scene(
         for camera in mapping.camera_sensor.values()
     }
 
+    offscreen_render = False
+    if headless and record_settings is not None:
+        offscreen_render = True
+        camera_viewers[-1] = OpenGLVision(
+            model=model, camera=CameraSensorMujoco(1, (record_settings.width, record_settings.height)),
+            headless=headless, open_gl_lib=render_backend,
+        )
+        camera_viewers[-1]._camera.type = mujoco.mjtCamera.mjCAMERA_FREE
+
     """Define some additional control variables."""
     last_control_time = 0.0
     last_sample_time = 0.0
@@ -80,12 +90,12 @@ def simulate_scene(
         []
     )  # The measured states of the simulation
 
-    """If we dont have cameras and the backend is not set we go to the default GLFW."""
-    if len(mapping.camera_sensor.values()) == 0:
-        render_backend = RenderBackend.GLFW
-
     """Initialize viewer object if we need to render the scene."""
-    if not headless or record_settings is not None:
+    if (not headless or record_settings is not None) and not offscreen_render:
+        """If we dont have cameras and the backend is not set we go to the default GLFW."""
+        if len(camera_viewers) == 0:
+            render_backend = RenderBackend.GLFW
+
         match viewer_type:
             case viewer_type.CUSTOM:
                 viewer = CustomMujocoViewer
@@ -109,7 +119,7 @@ def simulate_scene(
 
     """Record the scene if we want to record."""
     if record_settings is not None:
-        if not viewer.can_record:
+        if not offscreen_render and not viewer.can_record:
             raise ValueError(
                 f"Selected Viewer {type(viewer).__name__} has no functionality to record."
             )
@@ -120,7 +130,9 @@ def simulate_scene(
             video_file_path,
             fourcc,
             record_settings.fps,
-            viewer.current_viewport_size(),
+            ((record_settings.width, record_settings.height)
+             if offscreen_render else
+             viewer.current_viewport_size()),
         )
 
     """
@@ -178,7 +190,7 @@ def simulate_scene(
         # render if not headless. also render when recording and if it time for a new video frame.
         if not headless or (
             record_settings is not None and time >= last_video_time + video_step
-        ):
+        ) and not offscreen_render:
             _status = viewer.render()
 
             # Check if simulation was closed
@@ -189,24 +201,29 @@ def simulate_scene(
         if record_settings is not None and time >= last_video_time + video_step:
             last_video_time = int(time / video_step) * video_step
 
-            # https://github.com/deepmind/mujoco/issues/285 (see also record.cc)
-            img: npt.NDArray[np.uint8] = np.empty(
-                (*viewer.current_viewport_size(), 3),
-                dtype=np.uint8,
-            )
+            if offscreen_render:
+                img = camera_viewers[-1].process(model, data)
 
-            mujoco.mjr_readPixels(
-                rgb=img,
-                depth=None,
-                viewport=viewer.view_port,
-                con=viewer.context,
-            )
+            else:
+                # https://github.com/deepmind/mujoco/issues/285 (see also record.cc)
+                img: npt.NDArray[np.uint8] = np.empty(
+                    (*viewer.current_viewport_size(), 3),
+                    dtype=np.uint8,
+                )
+
+                mujoco.mjr_readPixels(
+                    rgb=img,
+                    depth=None,
+                    viewport=viewer.view_port,
+                    con=viewer.context,
+                )
+
             # Flip the image and map to OpenCV colormap (BGR -> RGB)
             img = np.flipud(img)[:, :, ::-1]
             video.write(img)
 
     """Once simulation is done we close the potential viewer and release the potential video."""
-    if not headless or record_settings is not None:
+    if (not headless or record_settings is not None) and not offscreen_render:
         viewer.close_viewer()
 
     if record_settings is not None:
