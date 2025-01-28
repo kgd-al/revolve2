@@ -210,6 +210,7 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         :param action: The Action.
         :param mods: The Mods.
         """
+        import glfw
         super()._key_callback(window, key, scancode, action, mods)
         if action != glfw.RELEASE:
             if key == glfw.KEY_LEFT_ALT:
