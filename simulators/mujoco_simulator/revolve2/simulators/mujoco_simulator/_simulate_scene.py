@@ -92,6 +92,8 @@ def simulate_scene(
 
     """Initialize viewer object if we need to render the scene."""
     if (not headless or record_settings is not None) and not offscreen_render:
+        import glfw
+
         """If we dont have cameras and the backend is not set we go to the default GLFW."""
         if len(camera_viewers) == 0:
             render_backend = RenderBackend.GLFW
