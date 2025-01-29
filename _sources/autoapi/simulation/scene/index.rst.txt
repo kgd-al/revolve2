@@ -409,6 +409,10 @@ Classes
       :returns: The multi-body systems in the scene.
 
 
+   .. py:property:: mujoco_specifics
+      :type: list[Tuple[Optional[str], str, dict[str, Any]]]
+
+
    .. py:attribute:: handler
       :type: simulation.scene._simulation_handler.SimulationHandler
 
@@ -419,6 +423,14 @@ Classes
       Add a multi-body system to the scene.
 
       :param multi_body_system: The multi-body system to add.
+
+
+   .. py:method:: add_mujoco_element(parent: Optional[str], tag: str, kwargs)
+
+      Add a mujoco-specific element to the scene
+      :param parent: The parent to attach the element to or None for the worldbody
+      :param tag: The tag of the element
+      :param kwargs: The arguments to create the element with
 
 
 

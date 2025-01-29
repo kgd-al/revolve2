@@ -51,4 +51,14 @@ Classes
 
       
 
+   .. py:attribute:: camera_id
+      :type: int | None
+
+      
+
+   .. py:attribute:: camera_type
+      :type: str | None
+
+      
+
 

@@ -61,6 +61,21 @@ Functions
       :param objt: The object as a multi body system.
 
 
+   .. py:method:: add_site(parent: Optional[str], **kwargs)
+
+      Add a site to the scene
+      :param parent: The parent for this site
+      :param kwargs: Arguments to construct the site with
+
+      @see https://mujoco.readthedocs.io/en/3.0.1/XMLreference.html#body-site
+
+
+   .. py:method:: add_camera(**kwargs)
+
+      Add a camera to the scene.
+      :param kwargs: The camera's parameters.
+
+
    .. py:method:: to_simulation_scene() -> tuple[revolve2.simulation.scene.Scene, dict[revolve2.simulation.scene.UUIDKey[revolve2.modular_robot.ModularRobot], revolve2.simulation.scene.MultiBodySystem]]
 
       Convert this to a simulation scene.
