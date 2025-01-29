@@ -72,14 +72,23 @@ def simulate_scene(
         for camera in mapping.camera_sensor.values()
     }
 
-    offscreen_render = False
-    if headless and record_settings is not None:
-        offscreen_render = True
+    offscreen_render = (headless and record_settings is not None)
+    if offscreen_render:
         camera_viewers[-1] = OpenGLVision(
-            model=model, camera=CameraSensorMujoco(1, (record_settings.width, record_settings.height)),
+            model=model, camera=CameraSensorMujoco(
+                1 if (cid := record_settings.camera_id) is None else cid,
+                (record_settings.width, record_settings.height)),
             headless=headless, open_gl_lib=render_backend,
         )
-        camera_viewers[-1]._camera.type = mujoco.mjtCamera.mjCAMERA_FREE
+        if record_settings.camera_type is not None:
+            camera_viewers[-1]._camera.type = dict(
+                free=mujoco.mjtCamera.mjCAMERA_FREE,
+                tracking=mujoco.mjtCamera.mjCAMERA_TRACKING,
+                fixed=mujoco.mjtCamera.mjCAMERA_FIXED,
+                user=mujoco.mjtCamera.mjCAMERA_USER,
+            )[record_settings.camera_type.lower()]
+        else:
+            camera_viewers[-1]._camera.type = mujoco.mjtCamera.mjCAMERA_FREE
 
     """Define some additional control variables."""
     last_control_time = 0.0

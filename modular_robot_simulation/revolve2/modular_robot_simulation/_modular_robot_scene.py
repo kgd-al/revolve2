@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
+from typing import Any, Optional, Tuple
 
 from revolve2.modular_robot import ModularRobot
-from revolve2.simulation.scene import MultiBodySystem, Pose, Scene, UUIDKey
+from revolve2.simulation.scene import MultiBodySystem, Pose, Scene, UUIDKey, RigidBody
 
 from ._build_multi_body_systems import BodyToMultiBodySystemConverter
 from ._convert_terrain import convert_terrain
@@ -21,8 +22,11 @@ class ModularRobotScene:
     The robots in the scene.
     This is an owning collection; the robots are assigned ids when they are added, equal to their index in this list.
     """
+
     _interactive_objects: list[MultiBodySystem] = field(default_factory=list)
     """Interactive objects in the scene, that are not robots themselves."""
+
+    _mujoco_specifics: list[Tuple[Optional[str], str, dict[str, Any]]] = field(default_factory=list)
 
     def add_robot(
         self, robot: ModularRobot, pose: Pose = Pose(), translate_z_aabb: bool = True
@@ -50,6 +54,23 @@ class ModularRobotScene:
         :param objt: The object as a multi body system.
         """
         self._interactive_objects.append(objt)
+
+    def add_site(self, parent: Optional[str], **kwargs):
+        """
+        Add a site to the scene
+        :param parent: The parent for this site
+        :param kwargs: Arguments to construct the site with
+
+        @see https://mujoco.readthedocs.io/en/3.0.1/XMLreference.html#body-site
+        """
+        self._mujoco_specifics.append((parent, "site", kwargs))
+
+    def add_camera(self, **kwargs):
+        """
+        Add a camera to the scene.
+        :param kwargs: The camera's parameters.
+        """
+        self._mujoco_specifics.append((None, "camera", kwargs))
 
     def to_simulation_scene(
         self,
@@ -88,5 +109,8 @@ class ModularRobotScene:
 
         for interactive_object in self._interactive_objects:
             scene.add_multi_body_system(interactive_object)
+
+        for mujoco_specific in self._mujoco_specifics:
+            scene.add_mujoco_element(*mujoco_specific)
 
         return scene, modular_robot_to_multi_body_system_mapping

@@ -5,6 +5,10 @@ from typing import Any
 
 import mujoco
 
+import math
+
+from pyrr import Quaternion
+
 try:
     import logging
 
@@ -15,7 +19,7 @@ try:
     new_len = len(logging.root.handlers)
 
     assert (
-        old_len + 1 == new_len
+            old_len + 1 == new_len
     ), "dm_control not adding logging handler as expected. Maybe they fixed their annoying behaviour? https://github.com/deepmind/dm_control/issues/314"
 
     logging.root.removeHandler(logging.root.handlers[-1])
@@ -41,10 +45,10 @@ from ._abstraction_to_mujoco_mapping import (
 
 
 def scene_to_model(
-    scene: Scene,
-    simulation_timestep: float,
-    cast_shadows: bool,
-    fast_sim: bool,
+        scene: Scene,
+        simulation_timestep: float,
+        cast_shadows: bool,
+        fast_sim: bool,
 ) -> tuple[mujoco.MjModel, AbstractionToMujocoMapping]:
     """
     Convert a scene to a MuJoCo model.
@@ -86,15 +90,15 @@ def scene_to_model(
 
     heightmaps: list[GeometryHeightmap] = []
     for mbs_i, (
-        multi_body_system,
-        (
-            urdf,
-            plane_geometries,
-            heightmap_geometries,
-            joints_and_names,
-            geoms_and_names,
-            rigid_bodies_and_names,
-        ),
+            multi_body_system,
+            (
+                    urdf,
+                    plane_geometries,
+                    heightmap_geometries,
+                    joints_and_names,
+                    geoms_and_names,
+                    rigid_bodies_and_names,
+            ),
     ) in enumerate(zip(scene.multi_body_systems, conversions, strict=True)):
         multi_body_system_model = mujoco.MjModel.from_xml_string(urdf)
         multi_body_system_mjcf = _create_tmp_file(multi_body_system_model)
@@ -107,7 +111,8 @@ def scene_to_model(
         multi_body_system_mjcf.statistic.meansize = None
         attachment_frame = env_mjcf.attach(multi_body_system_mjcf)
         attachment_frame.pos = [*multi_body_system.pose.position]
-        attachment_frame.quat = [*multi_body_system.pose.orientation]
+        attachment_frame.quat = [*multi_body_system.pose.orientation *
+                                  Quaternion.from_eulers([math.pi, 0, 0])]
         if not multi_body_system.is_static:
             attachment_frame.add("freejoint")
 
@@ -128,6 +133,10 @@ def scene_to_model(
         _set_colors_and_materials(
             geoms_and_names, multi_body_system_mjcf, fast_sim=fast_sim
         )
+
+    for parent, tag, kwargs in scene.mujoco_specifics:
+        parent = env_mjcf.worldbody if parent is None else env_mjcf.find("body", parent)
+        parent.add(tag, **kwargs)
 
     xml = env_mjcf.to_xml_string()
     assert isinstance(xml, str)
@@ -172,7 +181,7 @@ def _create_tmp_file(multi_body_system_model: mujoco.MjModel) -> mjcf.RootElemen
     """
     try:
         with tempfile.NamedTemporaryFile(
-            mode="r+", delete=True, suffix="_revolve2_mujoco.mjcf"
+                mode="r+", delete=True, suffix="_revolve2_mujoco.mjcf"
         ) as mjcf_file:
             mujoco.mj_saveLastXML(mjcf_file.name, multi_body_system_model)
             multi_body_system_mjcf = mjcf.from_file(mjcf_file)
@@ -180,7 +189,7 @@ def _create_tmp_file(multi_body_system_model: mujoco.MjModel) -> mjcf.RootElemen
     # since NamedTemporaryFile can't be opened twice when the file is still open.
     except Exception:
         with tempfile.NamedTemporaryFile(
-            mode="r+", delete=False, suffix="_revolve2_mujoco.mjcf"
+                mode="r+", delete=False, suffix="_revolve2_mujoco.mjcf"
         ) as mjcf_file:
             # to make sure the temp file is always deleted,
             # an error catching is needed, in case the xml saving fails and crashes the program
@@ -201,7 +210,7 @@ def _create_tmp_file(multi_body_system_model: mujoco.MjModel) -> mjcf.RootElemen
 
 
 def _add_planes(
-    plane_geometries: list[GeometryPlane], fast_sim: bool, env_mjcf: mjcf.RootElement
+        plane_geometries: list[GeometryPlane], fast_sim: bool, env_mjcf: mjcf.RootElement
 ) -> None:
     """
     Add plane objects to the mujoco simulation.
@@ -232,9 +241,9 @@ def _add_planes(
 
 
 def _add_heightmaps(
-    heightmap_geometries: list[GeometryHeightmap],
-    fast_sim: bool,
-    env_mjcf: mjcf.RootElement,
+        heightmap_geometries: list[GeometryHeightmap],
+        fast_sim: bool,
+        env_mjcf: mjcf.RootElement,
 ) -> list[GeometryHeightmap]:
     """
     Add heightmap geometries to the model.
@@ -284,10 +293,10 @@ def _add_heightmaps(
 
 
 def _add_sensors(
-    rigid_bodies_and_names: list[tuple[RigidBody, str]],
-    mbs_i: int,
-    multi_body_system_mjcf: mjcf.RootElement,
-    env_mjcf: mjcf.RootElement,
+        rigid_bodies_and_names: list[tuple[RigidBody, str]],
+        mbs_i: int,
+        multi_body_system_mjcf: mjcf.RootElement,
+        env_mjcf: mjcf.RootElement,
 ) -> None:
     """
     Add sensors to the model.
@@ -325,7 +334,7 @@ def _add_sensors(
 
         """Here we add camera Sensors."""
         for camera_i, camera in enumerate(rigid_body.sensors.camera_sensors):
-            camera_name = f"camera_{name}_{camera_i+1}"
+            camera_name = f"camera_{name}_{camera_i + 1}"
             env_mjcf.worldbody.add(
                 "camera",
                 name=camera_name,
@@ -333,7 +342,7 @@ def _add_sensors(
                 xyaxes="0 -1 0 0 0 1",
                 dclass=env_mjcf.full_identifier,
             )
-            site_name = f"{name}_site_camera_{camera_i+1}"
+            site_name = f"{name}_site_camera_{camera_i + 1}"
             env_mjcf.worldbody.add(
                 "site",
                 name=site_name,
@@ -343,8 +352,8 @@ def _add_sensors(
 
 
 def _add_joint_actuators(
-    joints_and_names: list[tuple[JointHinge, str]],
-    multi_body_system_mjcf: mjcf.RootElement,
+        joints_and_names: list[tuple[JointHinge, str]],
+        multi_body_system_mjcf: mjcf.RootElement,
 ) -> None:
     """
     Add actuation to the joints.
@@ -376,9 +385,9 @@ def _add_joint_actuators(
 
 
 def _set_colors_and_materials(
-    geoms_and_names: list[tuple[Geometry, str]],
-    multi_body_system_mjcf: mjcf.RootElement,
-    fast_sim: bool,
+        geoms_and_names: list[tuple[Geometry, str]],
+        multi_body_system_mjcf: mjcf.RootElement,
+        fast_sim: bool,
 ) -> None:
     """
     Set the colors and materials for the geometries contained in the model.
@@ -399,7 +408,7 @@ def _set_colors_and_materials(
 
 
 def _set_heightmap_values(
-    heightmaps: list[GeometryHeightmap], model: mujoco.MjModel
+        heightmaps: list[GeometryHeightmap], model: mujoco.MjModel
 ) -> None:
     """
     Set the values for the heightmaps.
@@ -411,16 +420,16 @@ def _set_heightmap_values(
 
     for heightmap in heightmaps:
         for x, y in product(
-            range(len(heightmap.heights)), range(len(heightmap.heights[0]))
+                range(len(heightmap.heights)), range(len(heightmap.heights[0]))
         ):
             model.hfield_data[y * len(heightmap.heights) + x] = heightmap.heights[x][y]
         heightmap_offset += len(heightmap.heights) * len(heightmap.heights[0])
 
 
 def _creat_sensor_maps(
-    all_rigid_bodies_and_names: list[list[tuple[RigidBody, str]]],
-    mapping: AbstractionToMujocoMapping,
-    model: mujoco.MjModel,
+        all_rigid_bodies_and_names: list[list[tuple[RigidBody, str]]],
+        mapping: AbstractionToMujocoMapping,
+        model: mujoco.MjModel,
 ) -> None:
     """
     Create mappings of the imu sensors to the gyro and accelerator sensors in mujoco.
@@ -442,7 +451,7 @@ def _creat_sensor_maps(
                 )
 
             for camera_i, camera in enumerate(rigid_body.sensors.camera_sensors):
-                camera_name = f"camera_{name}_{camera_i+1}"
+                camera_name = f"camera_{name}_{camera_i + 1}"
                 mapping.camera_sensor[UUIDKey(camera)] = CameraSensorMujoco(
                     camera_id=model.camera(camera_name).id,
                     camera_size=camera.camera_size,

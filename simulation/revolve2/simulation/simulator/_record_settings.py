@@ -12,3 +12,6 @@ class RecordSettings:
 
     width: int | None = None
     height: int | None = None
+
+    camera_id: int | None = None
+    camera_type: str | None = None
