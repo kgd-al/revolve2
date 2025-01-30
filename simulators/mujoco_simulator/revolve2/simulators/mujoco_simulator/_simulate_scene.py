@@ -1,5 +1,6 @@
 import logging
 import math
+from typing import List, Dict
 
 import cv2
 import mujoco
@@ -9,18 +10,19 @@ import numpy.typing as npt
 from revolve2.simulation.scene import Scene, SimulationState
 from revolve2.simulation.simulator import RecordSettings
 from ._abstraction_to_mujoco_mapping import CameraSensorMujoco
-
 from ._control_interface_impl import ControlInterfaceImpl
 from ._open_gl_vision import OpenGLVision
 from ._render_backend import RenderBackend
 from ._scene_to_model import scene_to_model
 from ._simulation_state_impl import SimulationStateImpl
 from .viewers import CustomMujocoViewer, NativeMujocoViewer, ViewerType
+from ...simulation.simulator._simulator import Callback
 
 
 def simulate_scene(
     scene_id: int,
     scene: Scene,
+    callbacks: Dict[Callback, List[Callback]],
     headless: bool,
     record_settings: RecordSettings | None,
     start_paused: bool,
@@ -101,8 +103,6 @@ def simulate_scene(
 
     """Initialize viewer object if we need to render the scene."""
     if (not headless or record_settings is not None) and not offscreen_render:
-        import glfw
-
         """If we dont have cameras and the backend is not set we go to the default GLFW."""
         if len(camera_viewers) == 0:
             render_backend = RenderBackend.GLFW
@@ -145,6 +145,10 @@ def simulate_scene(
              if offscreen_render else
              viewer.current_viewport_size()),
         )
+
+    if len(cbs := callbacks[Callback.START]) > 0:
+        for cb in cbs:
+            cb(model, data)
 
     """
     Compute forward dynamics without actually stepping forward in time.
@@ -213,7 +217,7 @@ def simulate_scene(
             last_video_time = int(time / video_step) * video_step
 
             if offscreen_render:
-                img = camera_viewers[-1].process(model, data)
+                img = images[-1]
 
             else:
                 # https://github.com/deepmind/mujoco/issues/285 (see also record.cc)

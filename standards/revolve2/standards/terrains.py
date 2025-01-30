@@ -1,6 +1,7 @@
 """Standard terrains."""
 
 import math
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -10,14 +11,16 @@ from pyrr import Vector3
 from revolve2.modular_robot_simulation import Terrain
 from revolve2.simulation.scene import Pose
 from revolve2.simulation.scene.geometry import GeometryHeightmap, GeometryPlane
+from revolve2.simulation.scene.geometry.textures import Texture
 from revolve2.simulation.scene.vector2 import Vector2
 
 
-def flat(size: Vector2 = Vector2([20.0, 20.0])) -> Terrain:
+def flat(size: Vector2 = Vector2([20.0, 20.0]), texture: Optional[Texture] = None) -> Terrain:
     """
     Create a flat plane terrain.
 
     :param size: Size of the plane.
+    :param texture: Texture to use.
     :returns: The created terrain.
     """
     return Terrain(
@@ -26,6 +29,7 @@ def flat(size: Vector2 = Vector2([20.0, 20.0])) -> Terrain:
                 pose=Pose(),
                 mass=0.0,
                 size=size,
+                texture=texture,
             )
         ]
     )

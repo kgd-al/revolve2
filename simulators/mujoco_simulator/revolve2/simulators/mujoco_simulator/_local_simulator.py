@@ -50,6 +50,8 @@ class LocalSimulator(Simulator):
             headless and start_paused
         ), "Cannot start simulation paused in headless mode."
 
+        super().__init__()
+
         self._headless = headless
         self._start_paused = start_paused
         self._num_simulators = num_simulators
@@ -101,6 +103,7 @@ class LocalSimulator(Simulator):
                         simulate_scene,  # This is the function to call, followed by the parameters of the function
                         scene_index,
                         scene,
+                        self._callbacks,
                         self._headless,
                         batch.record_settings,
                         self._start_paused,
@@ -120,6 +123,7 @@ class LocalSimulator(Simulator):
                 simulate_scene(
                     scene_index,  # This is the function to call, followed by the parameters of the function
                     scene,
+                    self._callbacks,
                     self._headless,
                     batch.record_settings,
                     self._start_paused,

@@ -8,6 +8,7 @@ import mujoco
 import math
 
 from pyrr import Quaternion
+from revolve2.standards.interactive_objects import Ball
 
 try:
     import logging
@@ -42,6 +43,9 @@ from ._abstraction_to_mujoco_mapping import (
     JointHingeMujoco,
     MultiBodySystemMujoco,
 )
+
+
+_flip_round = Quaternion.from_eulers([math.pi, 0, 0])
 
 
 def scene_to_model(
@@ -111,8 +115,7 @@ def scene_to_model(
         multi_body_system_mjcf.statistic.meansize = None
         attachment_frame = env_mjcf.attach(multi_body_system_mjcf)
         attachment_frame.pos = [*multi_body_system.pose.position]
-        attachment_frame.quat = [*multi_body_system.pose.orientation *
-                                  Quaternion.from_eulers([math.pi, 0, 0])]
+        attachment_frame.quat = [*multi_body_system.pose.orientation * _flip_round]
         if not multi_body_system.is_static:
             attachment_frame.add("freejoint")
 

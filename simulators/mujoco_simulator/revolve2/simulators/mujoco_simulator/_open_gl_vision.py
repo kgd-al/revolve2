@@ -72,7 +72,7 @@ class OpenGLVision:
         self._video_perturbations = mujoco.MjvPerturb()
 
         self._image = np.zeros(
-            (*camera.camera_size, 3), dtype=np.uint8
+            (camera.camera_size[1], camera.camera_size[0], 3), dtype=np.uint8
         )  # Create an empty RGB-image.
 
     def process(self, model: MjModel, data: MjData) -> NDArray[np.uint8]:
