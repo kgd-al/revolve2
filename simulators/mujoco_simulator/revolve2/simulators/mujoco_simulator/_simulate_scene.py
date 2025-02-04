@@ -146,9 +146,8 @@ def simulate_scene(
              viewer.current_viewport_size()),
         )
 
-    if len(cbs := callbacks[Callback.START]) > 0:
-        for cb in cbs:
-            cb(model, data)
+    for cb in callbacks[Callback.START]:
+        cb(model, data, mapping)
 
     """
     Compute forward dynamics without actually stepping forward in time.
@@ -172,6 +171,8 @@ def simulate_scene(
     while (time := data.time) < (
         float("inf") if simulation_time is None else simulation_time
     ):
+        for cb in callbacks[Callback.PRE_STEP]:
+            cb(model, data)
 
         # do control if it is time
         if time >= last_control_time + control_step:
@@ -236,6 +237,9 @@ def simulate_scene(
             # Flip the image and map to OpenCV colormap (BGR -> RGB)
             img = np.flipud(img)[:, :, ::-1]
             video.write(img)
+
+        for cb in callbacks[Callback.POST_STEP]:
+            cb(model, data)
 
     """Once simulation is done we close the potential viewer and release the potential video."""
     if (not headless or record_settings is not None) and not offscreen_render:

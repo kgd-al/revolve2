@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import math
+from functools import lru_cache
 from numbers import Number
-from typing import Any
+from typing import Any, List, Type
 
 import numpy as np
 from pyrr.objects.base import BaseMatrix33, BaseVector, NpProxy
@@ -52,8 +54,27 @@ class Vector2(BaseVector):  # type:ignore
 
     ########################
     # Operators
-    __NMB = [Number, np.number]
-    __VCT = ["Vector2", np.ndarray, list]
+    @staticmethod
+    def __has_type(other: Any, types: List[Type]) -> bool:
+        return any(issubclass(other, t) for t in types)
+
+    @classmethod
+    def __is_number(cls, other):
+        return cls.__is_number_type(type(other))
+
+    @classmethod
+    @lru_cache
+    def __is_number_type(cls, t: Type):
+        return cls.__has_type(t, [Number, np.number])
+
+    @classmethod
+    def __is_vector(cls, other):
+        return cls.__is_vector_type(type(other))
+
+    @classmethod
+    @lru_cache
+    def __is_vector_type(cls, t: Type):
+        return cls.__has_type(t, [cls, np.ndarray, list])
 
     def __add__(self, other: Any) -> Vector2:  # type:ignore
         """
@@ -62,9 +83,9 @@ class Vector2(BaseVector):  # type:ignore
         :param other: The other Vector2.
         :return: The added Vector2.
         """
-        if type(other) in self.__NMB:
+        if self.__is_number(other):
             return Vector2(super(Vector2, self).__add__(other))
-        elif type(other) in self.__VCT:
+        elif self.__is_vector(other):
             return Vector2(super(Vector2, self).__add__(other))
         else:
             self._unsupported_type("add", other)
@@ -76,9 +97,9 @@ class Vector2(BaseVector):  # type:ignore
         :param other: The other Vector2.
         :return: The subtracted Vector2.
         """
-        if type(other) in self.__NMB:
+        if self.__is_number(other):
             return Vector2(super(Vector2, self).__sub__(other))
-        elif type(other) in self.__VCT:
+        elif self.__is_vector(other):
             return Vector2(super(Vector2, self).__sub__(other))
         else:
             self._unsupported_type("subtract", other)
@@ -90,7 +111,7 @@ class Vector2(BaseVector):  # type:ignore
         :param other: The other Vector2.
         :return: the multiplied Vector2.
         """
-        if type(other) in self.__NMB:
+        if self.__is_number(other):
             return Vector2(super(Vector2, self).__mul__(other))
         else:
             self._unsupported_type("multiply", other)
@@ -102,7 +123,7 @@ class Vector2(BaseVector):  # type:ignore
         :param other: The other Vector2.
         :return: The cross-product.
         """
-        if type(other) in self.__VCT:
+        if self.__is_vector(other):
             return self.cross(other)
         else:
             self._unsupported_type("XOR", other)
@@ -114,7 +135,7 @@ class Vector2(BaseVector):  # type:ignore
         :param other: The other Vector2.
         :return: The dot-product.
         """
-        if type(other) in self.__VCT:
+        if self.__is_vector(other):
             return self.dot(other)
         else:
             self._unsupported_type("OR", other)
@@ -126,7 +147,7 @@ class Vector2(BaseVector):  # type:ignore
         :param other: The other Vector2.
         :return: whether they are unequal.
         """
-        if type(other) in self.__VCT:
+        if self.__is_vector(other):
             return bool(np.any(super(Vector2, self).__ne__(other)))
         else:
             self._unsupported_type("NE", other)
@@ -138,7 +159,7 @@ class Vector2(BaseVector):  # type:ignore
         :param other: The other Vector2.
         :return: whether they are equal.
         """
-        if type(other) in self.__VCT:
+        if self.__is_vector(other):
             return bool(np.all(super(Vector2, self).__eq__(other)))
         else:
             self._unsupported_type("EQ", other)
@@ -147,5 +168,13 @@ class Vector2(BaseVector):  # type:ignore
     # Methods and Properties
     @property
     def inverse(self) -> Vector2:
-        """:return: the inversed Vector2."""
+        """:return: the inverted Vector2."""
         return Vector2(-self)
+
+    @property
+    def length(self) -> float:
+        return math.sqrt(self.x**2 + self.y**2)
+
+    @property
+    def normalized(self) -> Vector2:
+        return Vector2(self / self.length)
