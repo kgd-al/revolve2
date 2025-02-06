@@ -1,5 +1,9 @@
 import logging
 import math
+import pprint
+from os import getenv
+from pathlib import Path
+from time import perf_counter
 from typing import List, Dict
 
 import cv2
@@ -56,7 +60,7 @@ def simulate_scene(
     """
     logging.info(f"Simulating scene {scene_id}")
 
-    """Define mujoco data and model objects for simuating."""
+    """Define mujoco data and model objects for simulating."""
     model, mapping = scene_to_model(
         scene, simulation_timestep, cast_shadows=cast_shadows, fast_sim=fast_sim
     )
