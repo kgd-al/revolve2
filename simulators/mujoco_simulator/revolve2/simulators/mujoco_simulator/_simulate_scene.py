@@ -20,7 +20,7 @@ from ._render_backend import RenderBackend
 from ._scene_to_model import scene_to_model
 from ._simulation_state_impl import SimulationStateImpl
 from .viewers import CustomMujocoViewer, NativeMujocoViewer, ViewerType
-from ...simulation.simulator._simulator import Callback
+from revolve2.simulation.simulator._simulator import Callback
 
 
 def simulate_scene(
@@ -211,6 +211,9 @@ def simulate_scene(
         if not headless or (
             record_settings is not None and time >= last_video_time + video_step
         ) and not offscreen_render:
+            for cb in callbacks[Callback.RENDER]:
+                cb(model, data, viewer)
+
             _status = viewer.render()
 
             # Check if simulation was closed
