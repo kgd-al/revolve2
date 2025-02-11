@@ -131,6 +131,8 @@ def simulate_scene(
             render_every_frame=False,
             hide_menus=(record_settings is not None),
         )
+        viewer._viewer_backend.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
+        viewer._viewer_backend.cam.fixedcamid = 0
 
     """Record the scene if we want to record."""
     if record_settings is not None:
