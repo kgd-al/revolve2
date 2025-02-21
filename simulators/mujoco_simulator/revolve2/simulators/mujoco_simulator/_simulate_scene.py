@@ -1,10 +1,6 @@
 import logging
 import math
-import pprint
-from os import getenv
-from pathlib import Path
-from time import perf_counter
-from typing import List, Dict
+from typing import List, Dict, Callable
 
 import cv2
 import mujoco
@@ -13,6 +9,7 @@ import numpy.typing as npt
 
 from revolve2.simulation.scene import Scene, SimulationState
 from revolve2.simulation.simulator import RecordSettings
+from revolve2.simulation.simulator._simulator import Callback
 from ._abstraction_to_mujoco_mapping import CameraSensorMujoco
 from ._control_interface_impl import ControlInterfaceImpl
 from ._open_gl_vision import OpenGLVision
@@ -20,13 +17,12 @@ from ._render_backend import RenderBackend
 from ._scene_to_model import scene_to_model
 from ._simulation_state_impl import SimulationStateImpl
 from .viewers import CustomMujocoViewer, NativeMujocoViewer, ViewerType
-from revolve2.simulation.simulator._simulator import Callback
 
 
 def simulate_scene(
     scene_id: int,
     scene: Scene,
-    callbacks: Dict[Callback, List[Callback]],
+    callbacks: Dict[Callback, List[Callable]],
     headless: bool,
     record_settings: RecordSettings | None,
     start_paused: bool,
@@ -66,50 +62,12 @@ def simulate_scene(
     )
     data = mujoco.MjData(model)
 
-    """Define a control interface for the mujoco simulation (used to control robots)."""
-    control_interface = ControlInterfaceImpl(
-        data=data, abstraction_to_mujoco_mapping=mapping
-    )
-    """Make separate viewer for camera sensors."""
-    camera_viewers = {
-        camera.camera_id: OpenGLVision(
-            model=model, camera=camera, headless=headless, open_gl_lib=render_backend
-        )
-        for camera in mapping.camera_sensor.values()
-    }
-
     offscreen_render = (headless and record_settings is not None)
-    if offscreen_render:
-        camera_viewers[-1] = OpenGLVision(
-            model=model, camera=CameraSensorMujoco(
-                1 if (cid := record_settings.camera_id) is None else cid,
-                (record_settings.width, record_settings.height)),
-            headless=headless, open_gl_lib=render_backend,
-        )
-        if record_settings.camera_type is not None:
-            camera_viewers[-1]._camera.type = dict(
-                free=mujoco.mjtCamera.mjCAMERA_FREE,
-                tracking=mujoco.mjtCamera.mjCAMERA_TRACKING,
-                fixed=mujoco.mjtCamera.mjCAMERA_FIXED,
-                user=mujoco.mjtCamera.mjCAMERA_USER,
-            )[record_settings.camera_type.lower()]
-        else:
-            camera_viewers[-1]._camera.type = mujoco.mjtCamera.mjCAMERA_FREE
-
-    """Define some additional control variables."""
-    last_control_time = 0.0
-    last_sample_time = 0.0
-    last_video_time = 0.0  # time at which last video frame was saved
-
-    simulation_states: list[SimulationState] = (
-        []
-    )  # The measured states of the simulation
-
     """Initialize viewer object if we need to render the scene."""
-    if (not headless or record_settings is not None) and not offscreen_render:
-        """If we dont have cameras and the backend is not set we go to the default GLFW."""
-        if len(camera_viewers) == 0:
-            render_backend = RenderBackend.GLFW
+    if not headless:
+        render_backend = RenderBackend.GLFW
+        import glfw
+        glfw.init()
 
         match viewer_type:
             case viewer_type.CUSTOM:
@@ -134,6 +92,45 @@ def simulate_scene(
         viewer._viewer_backend.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
         viewer._viewer_backend.cam.fixedcamid = 0
 
+    """Define a control interface for the mujoco simulation (used to control robots)."""
+    control_interface = ControlInterfaceImpl(
+        data=data, abstraction_to_mujoco_mapping=mapping
+    )
+    """Make separate viewer for camera sensors."""
+    camera_viewers = {
+        camera.camera_id: OpenGLVision(
+            model=model, camera=camera, headless=headless, open_gl_lib=render_backend
+        )
+        for camera in mapping.camera_sensor.values()
+    }
+
+    if offscreen_render:
+        camera_viewers[-1] = OpenGLVision(
+            model=model, camera=CameraSensorMujoco(
+                1 if (cid := record_settings.camera_id) is None else cid,
+                (record_settings.width, record_settings.height)),
+            headless=headless, open_gl_lib=render_backend,
+        )
+
+        if record_settings.camera_type is not None:
+            camera_viewers[-1]._camera.type = dict(
+                free=mujoco.mjtCamera.mjCAMERA_FREE,
+                tracking=mujoco.mjtCamera.mjCAMERA_TRACKING,
+                fixed=mujoco.mjtCamera.mjCAMERA_FIXED,
+                user=mujoco.mjtCamera.mjCAMERA_USER,
+            )[record_settings.camera_type.lower()]
+        else:
+            camera_viewers[-1]._camera.type = mujoco.mjtCamera.mjCAMERA_FREE
+
+    """Define some additional control variables."""
+    last_control_time = 0.0
+    last_sample_time = 0.0
+    last_video_time = 0.0  # time at which last video frame was saved
+
+    simulation_states: list[SimulationState] = (
+        []
+    )  # The measured states of the simulation
+
     """Record the scene if we want to record."""
     if record_settings is not None:
         if not offscreen_render and not viewer.can_record:
@@ -143,17 +140,18 @@ def simulate_scene(
         video_step = 1 / record_settings.fps
         video_file_path = f"{record_settings.video_directory}/{scene_id}.mp4"
         fourcc = cv2.VideoWriter.fourcc(*"mp4v")
+        video_size = ((record_settings.width, record_settings.height)
+                      if offscreen_render else
+                      viewer.current_viewport_size())
         video = cv2.VideoWriter(
             video_file_path,
             fourcc,
             record_settings.fps,
-            ((record_settings.width, record_settings.height)
-             if offscreen_render else
-             viewer.current_viewport_size()),
+            video_size,
         )
 
     for cb in callbacks[Callback.START]:
-        cb(model, data, mapping)
+        cb(model=model, data=data, mapping=mapping, handler=scene.handler)
 
     """
     Compute forward dynamics without actually stepping forward in time.
@@ -165,16 +163,32 @@ def simulate_scene(
         for camera_id, camera_viewer in camera_viewers.items()
     }
 
+    def sample(log=False):
+        _state = SimulationStateImpl(
+            data=data, abstraction_to_mujoco_mapping=mapping, camera_views=images
+        )
+        if log:
+            simulation_states.append(_state)
+        return _state
+
+    def control():
+        for _cb in callbacks[Callback.PRE_CONTROL]:
+            _cb(model, data)
+
+        scene.handler.handle(sample(), control_interface, control_step)
+
+        for _cb in callbacks[Callback.POST_CONTROL]:
+            _cb(model, data)
+
     # Sample initial state.
     if sample_step is not None:
-        simulation_states.append(
-            SimulationStateImpl(
-                data=data, abstraction_to_mujoco_mapping=mapping, camera_views=images
-            )
-        )
+        sample(log=True)
+
+    if control_step is not None:
+        control()
 
     """After rendering the initial state, we enter the rendering loop."""
-    while (time := data.time) < (
+    while (time := data.time) <= (
         float("inf") if simulation_time is None else simulation_time
     ):
         for cb in callbacks[Callback.PRE_STEP]:
@@ -184,22 +198,13 @@ def simulate_scene(
         if time >= last_control_time + control_step:
             last_control_time = math.floor(time / control_step) * control_step
 
-            simulation_state = SimulationStateImpl(
-                data=data, abstraction_to_mujoco_mapping=mapping, camera_views=images
-            )
-            scene.handler.handle(simulation_state, control_interface, control_step)
+            control()
 
         # sample state if it is time
         if sample_step is not None:
             if time >= last_sample_time + sample_step:
                 last_sample_time = int(time / sample_step) * sample_step
-                simulation_states.append(
-                    SimulationStateImpl(
-                        data=data,
-                        abstraction_to_mujoco_mapping=mapping,
-                        camera_views=images,
-                    )
-                )
+                sample(log=True)
 
         # step simulation
         mujoco.mj_step(model, data)
@@ -232,7 +237,7 @@ def simulate_scene(
             else:
                 # https://github.com/deepmind/mujoco/issues/285 (see also record.cc)
                 img: npt.NDArray[np.uint8] = np.empty(
-                    (*viewer.current_viewport_size(), 3),
+                    (video_size[1], video_size[0], 3),
                     dtype=np.uint8,
                 )
 
@@ -250,6 +255,9 @@ def simulate_scene(
         for cb in callbacks[Callback.POST_STEP]:
             cb(model, data)
 
+    for cb in callbacks[Callback.END]:
+        cb(model, data)
+
     """Once simulation is done we close the potential viewer and release the potential video."""
     if (not headless or record_settings is not None) and not offscreen_render:
         viewer.close_viewer()
@@ -259,11 +267,7 @@ def simulate_scene(
 
     # Sample one final time.
     if sample_step is not None:
-        simulation_states.append(
-            SimulationStateImpl(
-                data=data, abstraction_to_mujoco_mapping=mapping, camera_views=images
-            )
-        )
+        sample(log=True)
 
     logging.info(f"Scene {scene_id} done.")
     return simulation_states

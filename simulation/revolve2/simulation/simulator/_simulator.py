@@ -10,7 +10,9 @@ from ._batch import Batch
 class Callback(Enum):
     START = auto()
     PRE_STEP = auto()
+    PRE_CONTROL = auto()
     RENDER = auto()
+    POST_CONTROL = auto()
     POST_STEP = auto()
     END = auto()
 

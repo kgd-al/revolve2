@@ -1,14 +1,11 @@
+import math
 import os
 import tempfile
 from itertools import product
 from typing import Any
 
 import mujoco
-
-import math
-
 from pyrr import Quaternion
-from revolve2.standards.interactive_objects import Ball
 
 try:
     import logging
@@ -114,6 +111,7 @@ def scene_to_model(
         multi_body_system_mjcf.statistic.center = None
         multi_body_system_mjcf.statistic.meansize = None
         attachment_frame = env_mjcf.attach(multi_body_system_mjcf)
+
         attachment_frame.pos = [*multi_body_system.pose.position]
         attachment_frame.quat = [*multi_body_system.pose.orientation * _flip_round]
         if not multi_body_system.is_static:
@@ -137,8 +135,14 @@ def scene_to_model(
             geoms_and_names, multi_body_system_mjcf, fast_sim=fast_sim
         )
 
-    for parent, tag, kwargs in scene.mujoco_specifics:
-        parent = env_mjcf.worldbody if parent is None else env_mjcf.find("body", parent)
+    for parent_name, tag, kwargs in scene.mujoco_specifics:
+        parent = env_mjcf.worldbody
+        if parent_name is not None:
+            parent_tag = kwargs.pop("parent_tag", "body")
+            parent = env_mjcf.find(parent_tag, parent_name)
+            if parent_tag == "attachment_frame":
+                parent = parent._attachment.worldbody
+        assert parent is not None, f"Could not find {parent_name} in\n{env_mjcf.to_xml_string()}"
         parent.add(tag, **kwargs)
 
     xml = env_mjcf.to_xml_string()
@@ -338,19 +342,21 @@ def _add_sensors(
         """Here we add camera Sensors."""
         for camera_i, camera in enumerate(rigid_body.sensors.camera_sensors):
             camera_name = f"camera_{name}_{camera_i + 1}"
-            env_mjcf.worldbody.add(
+            rigid_body_mjcf.add(
                 "camera",
+                pos=camera.pose.position,
+                quat=camera.pose.orientation,
                 name=camera_name,
                 mode="fixed",
-                xyaxes="0 -1 0 0 0 1",
+                # xyaxes="0 -1 0 0 0 1",
                 dclass=env_mjcf.full_identifier,
             )
             site_name = f"{name}_site_camera_{camera_i + 1}"
-            env_mjcf.worldbody.add(
+            rigid_body_mjcf.add(
                 "site",
                 name=site_name,
-                pos=[*camera.pose.position],
-                quat=[*camera.pose.orientation],
+                pos=camera.pose.position,
+                quat=camera.pose.orientation,
             )
 
 
@@ -454,7 +460,7 @@ def _creat_sensor_maps(
                 )
 
             for camera_i, camera in enumerate(rigid_body.sensors.camera_sensors):
-                camera_name = f"camera_{name}_{camera_i + 1}"
+                camera_name = f"mbs{mbs_i}/camera_{name}_{camera_i + 1}"
                 mapping.camera_sensor[UUIDKey(camera)] = CameraSensorMujoco(
                     camera_id=model.camera(camera_name).id,
                     camera_size=camera.camera_size,

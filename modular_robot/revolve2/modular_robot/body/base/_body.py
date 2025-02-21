@@ -7,9 +7,11 @@ from pyrr import Quaternion, Vector3
 
 from .._module import Module
 from ._core import Core
+from ..sensors import Sensor
 
 TModule = TypeVar("TModule", bound=Module)
 TModuleNP = TypeVar("TModuleNP", bound=np.generic)
+TSensor = TypeVar("TSensor", bound=Sensor)
 
 
 class Body:
@@ -61,7 +63,7 @@ class Body:
         return position
 
     @classmethod
-    def __find_recur(
+    def __find_module_recur(
         cls, module: Module, module_type: Type[TModule], exclude: list[Type[TModule]]
     ) -> list[TModule]:
         modules = []
@@ -70,7 +72,7 @@ class Body:
         ):
             modules.append(module)
         for child in module.children.values():
-            modules.extend(cls.__find_recur(child, module_type, exclude))
+            modules.extend(cls.__find_module_recur(child, module_type, exclude))
         return modules
 
     def find_modules_of_type(
@@ -83,9 +85,22 @@ class Body:
         :param exclude: Module types to be excluded in search.
         :return: The list of Modules.
         """
-        return self.__find_recur(
+        return self.__find_module_recur(
             self._core, module_type, [] if exclude is None else exclude
         )
+
+    @classmethod
+    def __find_sensor_recur(cls, module: Module, sensor_type: Type[TSensor]) -> list[TSensor]:
+        sensors = []
+        for sensor in module.sensors.get_all_sensors():
+            if isinstance(sensor, sensor_type):
+                sensors.append(sensor)
+        for child in module.children.values():
+            sensors.extend(cls.__find_sensor_recur(child, sensor_type))
+        return sensors
+
+    def find_sensors_of_type(self, sensor_type: Type[TSensor]) -> list[TSensor]:
+        return self.__find_sensor_recur(self._core, sensor_type)
 
     def to_grid(self) -> tuple[NDArray[TModuleNP], Vector3[np.int_]]:
         """

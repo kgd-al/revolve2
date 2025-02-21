@@ -81,7 +81,7 @@ class OpenGLVision:
 
         :param model: The mujoco model.
         :param data: The mujoco data.
-        :return: The rendered image (RGB format).
+        :return: The rendered image (BGR format).
         """
         mujoco.mjv_updateScene(
             model,
@@ -95,6 +95,7 @@ class OpenGLVision:
         mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_OFFSCREEN, self._mujoco_context)
         mujoco.mjr_render(self._viewport, self._mujoco_scene, self._mujoco_context)
         mujoco.mjr_readPixels(self._image, None, self._viewport, self._mujoco_context)
+        mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_WINDOW, self._mujoco_context)
         return self._image
 
     @staticmethod

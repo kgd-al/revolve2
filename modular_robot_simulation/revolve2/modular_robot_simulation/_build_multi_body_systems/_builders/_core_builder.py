@@ -1,3 +1,7 @@
+import math
+
+from pyrr import Quaternion
+
 from revolve2.modular_robot.body.base import Core
 from revolve2.simulation.scene import AABB, MultiBodySystem, Pose, RigidBody
 from revolve2.simulation.scene.geometry import GeometryBox
@@ -27,9 +31,9 @@ class CoreBuilder(Builder):
         self._slot_pose = slot_pose
 
     def build(
-        self,
-        multi_body_system: MultiBodySystem,
-        body_to_multi_body_system_mapping: BodyToMultiBodySystemMapping,
+            self,
+            multi_body_system: MultiBodySystem,
+            body_to_multi_body_system_mapping: BodyToMultiBodySystemMapping,
     ) -> list[UnbuiltChild]:
         """
         Build a module onto the Robot.
@@ -50,7 +54,15 @@ class CoreBuilder(Builder):
         tasks = []
         for sensor in self._module.sensors.get_all_sensors():
             unbuilt = UnbuiltChild(child_object=sensor, rigid_body=self._rigid_body)
-            unbuilt.make_pose(position=self._slot_pose.position)
+            unbuilt.make_pose(
+                position=self._slot_pose.position + sensor.position,
+                orientation=(
+                    self._slot_pose.orientation
+                    * sensor.orientation
+                    * Quaternion.from_y_rotation(-math.pi / 2)
+                    * Quaternion.from_z_rotation(math.pi / 2)
+                )
+            )
             tasks.append(unbuilt)
 
         for child_index, attachment_point in self._module.attachment_points.items():
@@ -62,11 +74,11 @@ class CoreBuilder(Builder):
                 )
                 unbuilt.make_pose(
                     position=self._slot_pose.position
-                    + self._slot_pose.orientation
-                    * attachment_point.orientation
-                    * attachment_point.offset,
+                             + self._slot_pose.orientation
+                             * attachment_point.orientation
+                             * attachment_point.offset,
                     orientation=self._slot_pose.orientation
-                    * attachment_point.orientation,
+                                * attachment_point.orientation,
                 )
 
                 tasks.append(unbuilt)
