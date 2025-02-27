@@ -153,6 +153,10 @@ def simulate_scene(
     for cb in callbacks[Callback.START]:
         cb(model=model, data=data, mapping=mapping, handler=scene.handler)
 
+    if not headless:
+        for cb in callbacks[Callback.RENDER_START]:
+            cb(model=model, data=data, viewer=viewer)
+
     """
     Compute forward dynamics without actually stepping forward in time.
     This updates the data so we can read out the initial state.
@@ -257,6 +261,10 @@ def simulate_scene(
 
     for cb in callbacks[Callback.END]:
         cb(model, data)
+
+    if not headless:
+        for cb in callbacks[Callback.RENDER_END]:
+            cb(model=model, data=data, viewer=viewer)
 
     """Once simulation is done we close the potential viewer and release the potential video."""
     if (not headless or record_settings is not None) and not offscreen_render:

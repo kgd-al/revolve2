@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import Any
 
-# import glfw
+import glfw
 import mujoco
 import mujoco_viewer
 
@@ -57,7 +57,6 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         :param start_paused: Whether to start paused.
         :param render_every_frame: Whether to render every frame.
         """
-        import glfw
 
         super().__init__(
             model,
@@ -210,7 +209,6 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         :param action: The Action.
         :param mods: The Mods.
         """
-        import glfw
         super()._key_callback(window, key, scancode, action, mods)
         if action != glfw.RELEASE:
             if key == glfw.KEY_LEFT_ALT:
@@ -271,8 +269,6 @@ class CustomMujocoViewer(Viewer):
         :param _: Some unused kwargs.
         """
 
-        import glfw
-
         match backend:
             case RenderBackend.EGL:
                 glfw.window_hint(glfw.CONTEXT_CREATION_API, glfw.EGL_CONTEXT_API)
@@ -298,9 +294,6 @@ class CustomMujocoViewer(Viewer):
 
         :return: the viewport size
         """
-
-        import glfw
-
         self._viewer_backend.viewport.width, self._viewer_backend.height = (
             glfw.get_framebuffer_size(self._viewer_backend.window)
         )
