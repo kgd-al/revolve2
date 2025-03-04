@@ -61,7 +61,7 @@ class ModularRobotScene:
         :param parent: The parent for this site
         :param kwargs: Arguments to construct the site with
 
-        @see https://mujoco.readthedocs.io/en/3.0.1/XMLreference.html#body-site
+        @see https://mujoco.readthedocs.io/en/2.3.7/XMLreference.html#body-site
         """
         self._mujoco_specifics.append((parent, "site", kwargs))
 
@@ -71,6 +71,16 @@ class ModularRobotScene:
         :param kwargs: The camera's parameters.
         """
         self._mujoco_specifics.append((None, "camera", kwargs))
+
+    def add_body(self, parent: Optional[str], **kwargs):
+        """
+        Add a body to the scene
+        :param parent: The parent for this body
+        :param kwargs: Arguments to construct the site with
+
+        @see https://mujoco.readthedocs.io/en/2.3.7/XMLreference.html#world-body-r
+        """
+        self._mujoco_specifics.append((parent, "body", kwargs))
 
     def to_simulation_scene(
         self,
