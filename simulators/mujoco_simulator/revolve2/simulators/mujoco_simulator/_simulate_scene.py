@@ -222,10 +222,7 @@ def simulate_scene(
         if not headless or (
             record_settings is not None and time >= last_video_time + video_step
         ) and not offscreen_render:
-            for cb in callbacks[Callback.RENDER]:
-                cb(model, data, viewer)
-
-            _status = viewer.render()
+            _status = viewer.render(callbacks)
 
             # Check if simulation was closed
             if _status == -1:

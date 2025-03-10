@@ -1,13 +1,14 @@
 """A custom viewer for mujoco with additional features."""
-
+import time
 from enum import Enum
-from typing import Any
+from typing import Any, Callable
 
 import glfw
 import mujoco
 import mujoco_viewer
 
 from revolve2.simulation.simulator import Viewer
+from revolve2.simulation.simulator._simulator import Callback
 
 from .._render_backend import RenderBackend
 
@@ -75,14 +76,17 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         self._mujoco_version = tuple(map(int, mujoco.__version__.split(".")))
         self._render_every_frame = render_every_frame
 
-    def render(self) -> int | None:
+        self._overlays = []
+        self._callbacks = {}
+
+    def render(self, callbacks) -> int | None:
         """
         Render the scene.
 
         :return: A cycle position if applicable.
         """
         if self.is_alive:
-            super().render()
+            self.render()
         else:
             return -1
         if self._viewer_mode == CustomMujocoViewerMode.MANUAL:
@@ -197,6 +201,14 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         )
         self._add_overlay(bottomleft, "timestep", "%.5f" % self.model.opt.timestep)
 
+        for position, label, getter in self._overlays:
+            self._add_overlay(position, label, getter())
+
+    def add_callback(self, position: mujoco.mjtGridPos, label: str, key: Any,
+                     getter: Callable, setter: Callable):
+        self._overlays.append((position, label, getter))
+        self._callbacks[key] = setter
+
     def _key_callback(
         self, window: Any, key: Any, scancode: Any, action: Any, mods: Any
     ) -> None:
@@ -219,10 +231,113 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
                     self._increment_position()
                 case _:
                     pass
+            if (fn := self._callbacks.get(key, None)) is not None:
+                fn()
 
     def _increment_position(self) -> None:
         """Increment our cycle position."""
         self._position = (self._position + 1) % 5
+
+    def render(self, callbacks):
+        if self.render_mode == 'offscreen':
+            raise NotImplementedError(
+                "Use 'read_pixels()' for 'offscreen' mode.")
+        if not self.is_alive:
+            return
+        if glfw.window_should_close(self.window):
+            self.close()
+            return
+
+        if self._paused:
+            while self._paused:
+                self.update(callbacks)
+                if glfw.window_should_close(self.window):
+                    self.close()
+                    break
+                if self._advance_by_one_step:
+                    self._advance_by_one_step = False
+                    break
+        else:
+            self._loop_count += self.model.opt.timestep / \
+                                (self._time_per_render * self._run_speed)
+            if self._render_every_frame:
+                self._loop_count = 1
+            while self._loop_count > 0:
+                self.update(callbacks)
+                self._loop_count -= 1
+
+        # clear markers
+        self._markers[:] = []
+
+        # apply perturbation (should this come before mj_step?)
+        self.apply_perturbations()
+
+    # mjv_updateScene, mjr_render, mjr_overlay
+    def update(self, callbacks):
+        # fill overlay items
+        self._create_overlay()
+
+        render_start = time.time()
+
+        width, height = glfw.get_framebuffer_size(self.window)
+        self.viewport.width, self.viewport.height = width, height
+
+        with self._gui_lock:
+            for cb in callbacks[Callback.PRE_RENDER]:
+                cb(self.model, self.data, self)
+
+            # update scene
+            mujoco.mjv_updateScene(
+                self.model,
+                self.data,
+                self.vopt,
+                self.pert,
+                self.cam,
+                mujoco.mjtCatBit.mjCAT_ALL.value,
+                self.scn)
+            # marker items
+            for marker in self._markers:
+                self._add_marker_to_scene(marker)
+            # render
+            mujoco.mjr_render(self.viewport, self.scn, self.ctx)
+            # overlay items
+            for gridpos, [t1, t2] in self._overlay.items():
+                menu_positions = [mujoco.mjtGridPos.mjGRID_TOPLEFT,
+                                  mujoco.mjtGridPos.mjGRID_BOTTOMLEFT]
+                if gridpos in menu_positions and self._hide_menus:
+                    continue
+
+                mujoco.mjr_overlay(
+                    mujoco.mjtFontScale.mjFONTSCALE_150,
+                    gridpos,
+                    self.viewport,
+                    t1[:-1],
+                    t2[:-1],
+                    self.ctx)
+
+            # handle figures
+            if not self._hide_graph:
+                for idx, fig in enumerate(self.figs):
+                    width_adjustment = width % 4
+                    x = int(3 * width / 4) + width_adjustment
+                    y = idx * int(height / 4)
+                    viewport = mujoco.MjrRect(
+                        x, y, int(width / 4), int(height / 4))
+
+                    has_lines = len([i for i in fig.linename if i != b''])
+                    if has_lines:
+                        mujoco.mjr_figure(viewport, fig, self.ctx)
+
+            for cb in callbacks[Callback.POST_RENDER]:
+                cb(self.model, self.data, self)
+
+            glfw.swap_buffers(self.window)
+        glfw.poll_events()
+        self._time_per_render = 0.9 * self._time_per_render + \
+                                0.1 * (time.time() - render_start)
+
+        # clear overlay
+        self._overlay.clear()
 
 
 class CustomMujocoViewer(Viewer):
@@ -299,18 +414,21 @@ class CustomMujocoViewer(Viewer):
         )
         return self._viewer_backend.viewport.width, self._viewer_backend.height
 
-    def render(self) -> int | None:
+    def render(self, callbacks) -> int | None:
         """
         Render the scene.
 
         :return: A cycle position if applicable.
         """
-        feedback = self._viewer_backend.render()
+        feedback = self._viewer_backend.render(callbacks)
         return feedback
 
     def close_viewer(self) -> None:
         """Close the viewer."""
         self._viewer_backend.close()
+
+    def is_alive(self) -> bool:
+        return self._viewer_backend.is_alive
 
     @property
     def context(self) -> mujoco.MjrContext:

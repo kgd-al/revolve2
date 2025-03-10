@@ -10,6 +10,10 @@ class Viewer(ABC):
         """Close the viewer."""
 
     @abstractmethod
+    def is_alive(self) -> bool:
+        """Check if the viewer is alive."""
+
+    @abstractmethod
     def render(self) -> Any | None:
         """
         Render the scene on the viewer.
