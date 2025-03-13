@@ -150,6 +150,8 @@ def simulate_scene(
             video_size,
         )
 
+    callbacks = {k: [] for k in Callback}
+
     for cb in callbacks[Callback.START]:
         cb(model=model, data=data, mapping=mapping, handler=scene.handler)
 

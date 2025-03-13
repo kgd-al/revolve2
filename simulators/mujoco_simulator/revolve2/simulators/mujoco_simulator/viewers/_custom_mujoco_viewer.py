@@ -86,7 +86,8 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         :return: A cycle position if applicable.
         """
         if self.is_alive:
-            self.render()
+            self._render(callbacks)
+            # super().render()
         else:
             return -1
         if self._viewer_mode == CustomMujocoViewerMode.MANUAL:
@@ -200,6 +201,7 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
             bottomleft, "Step", str(round(self.data.time / self.model.opt.timestep))
         )
         self._add_overlay(bottomleft, "timestep", "%.5f" % self.model.opt.timestep)
+        self._add_overlay(bottomleft, "Time", "%gs" % self.data.time)
 
         for position, label, getter in self._overlays:
             self._add_overlay(position, label, getter())
@@ -238,7 +240,7 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         """Increment our cycle position."""
         self._position = (self._position + 1) % 5
 
-    def render(self, callbacks):
+    def _render(self, callbacks):
         if self.render_mode == 'offscreen':
             raise NotImplementedError(
                 "Use 'read_pixels()' for 'offscreen' mode.")
@@ -250,7 +252,7 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
 
         if self._paused:
             while self._paused:
-                self.update(callbacks)
+                self._update(callbacks)
                 if glfw.window_should_close(self.window):
                     self.close()
                     break
@@ -260,10 +262,12 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         else:
             self._loop_count += self.model.opt.timestep / \
                                 (self._time_per_render * self._run_speed)
+            print(self._loop_count, self._time_per_render, self._run_speed)
+
             if self._render_every_frame:
                 self._loop_count = 1
             while self._loop_count > 0:
-                self.update(callbacks)
+                self._update(callbacks)
                 self._loop_count -= 1
 
         # clear markers
@@ -273,11 +277,11 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         self.apply_perturbations()
 
     # mjv_updateScene, mjr_render, mjr_overlay
-    def update(self, callbacks):
+    def _update(self, callbacks):
+        render_start = time.time()
+
         # fill overlay items
         self._create_overlay()
-
-        render_start = time.time()
 
         width, height = glfw.get_framebuffer_size(self.window)
         self.viewport.width, self.viewport.height = width, height
@@ -285,6 +289,8 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         with self._gui_lock:
             for cb in callbacks[Callback.PRE_RENDER]:
                 cb(self.model, self.data, self)
+
+            print("[kgd-debug]", time.time(), self.data.time)
 
             # update scene
             mujoco.mjv_updateScene(
@@ -332,9 +338,10 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
                 cb(self.model, self.data, self)
 
             glfw.swap_buffers(self.window)
+
         glfw.poll_events()
-        self._time_per_render = 0.9 * self._time_per_render + \
-                                0.1 * (time.time() - render_start)
+        self._time_per_render = (0.9 * self._time_per_render +
+                                 0.1 * (time.time() - render_start))
 
         # clear overlay
         self._overlay.clear()
