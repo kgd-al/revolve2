@@ -89,8 +89,15 @@ def simulate_scene(
             render_every_frame=False,
             hide_menus=(record_settings is not None),
         )
-        viewer._viewer_backend.cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
-        viewer._viewer_backend.cam.fixedcamid = 0
+
+        cam = None
+        if viewer_type == viewer_type.CUSTOM:
+            cam = viewer._viewer_backend.cam
+        elif viewer_type == viewer_type.NATIVE:
+            cam = viewer._viewer.cam
+        cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
+        cam.fixedcamid = 0
+
 
     """Define a control interface for the mujoco simulation (used to control robots)."""
     control_interface = ControlInterfaceImpl(
@@ -150,7 +157,7 @@ def simulate_scene(
             video_size,
         )
 
-    callbacks = {k: [] for k in Callback}
+    # callbacks = {k: [] for k in Callback}
 
     for cb in callbacks[Callback.START]:
         cb(model=model, data=data, mapping=mapping, handler=scene.handler)

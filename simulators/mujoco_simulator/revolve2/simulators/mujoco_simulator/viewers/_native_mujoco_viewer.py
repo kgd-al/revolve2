@@ -93,3 +93,7 @@ class NativeMujocoViewer(Viewer):
         :returns: False.
         """
         return False
+
+    @property
+    def is_alive(self) -> bool:
+        return self._viewer.is_running()
