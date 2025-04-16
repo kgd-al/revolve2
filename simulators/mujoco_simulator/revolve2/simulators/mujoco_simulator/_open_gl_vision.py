@@ -53,6 +53,7 @@ class OpenGLVision:
         :param max_geometries: The maximum amount of geometries allowed in a scene.
         """
         context = self.get_context(open_gl_lib)
+        self._open_gl_context = None
         if headless:
             self._open_gl_context = context(*camera.camera_size)
             self._open_gl_context.make_current()
@@ -97,6 +98,11 @@ class OpenGLVision:
         mujoco.mjr_readPixels(self._image, None, self._viewport, self._mujoco_context)
         mujoco.mjr_setBuffer(mujoco.mjtFramebuffer.mjFB_WINDOW, self._mujoco_context)
         return self._image
+
+    def free(self):
+        if self._open_gl_context is not None:
+            self._open_gl_context.free()
+            self._open_gl_context = None
 
     @staticmethod
     def get_context(open_gl_lib: RenderBackend) -> Any:

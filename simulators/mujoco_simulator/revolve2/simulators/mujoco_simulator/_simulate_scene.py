@@ -283,5 +283,8 @@ def simulate_scene(
     if sample_step is not None:
         sample(log=True)
 
+    for camera_viewer in camera_viewers.values():
+        camera_viewer.free()
+
     logging.info(f"Scene {scene_id} done.")
     return simulation_states

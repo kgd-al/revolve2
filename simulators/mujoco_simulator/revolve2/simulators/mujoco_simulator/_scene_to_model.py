@@ -147,6 +147,7 @@ def scene_to_model(
 
     xml = env_mjcf.to_xml_string()
     assert isinstance(xml, str)
+    print(xml)
 
     model = mujoco.MjModel.from_xml_string(xml)
 

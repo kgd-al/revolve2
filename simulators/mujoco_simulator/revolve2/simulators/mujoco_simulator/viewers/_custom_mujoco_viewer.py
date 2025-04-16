@@ -208,8 +208,10 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
 
     def add_callback(self, position: mujoco.mjtGridPos, label: str, key: Any,
                      getter: Callable, setter: Callable):
-        self._overlays.append((position, label, getter))
-        self._callbacks[key] = setter
+        if not any(x is None for x in (position, label, getter)):
+            self._overlays.append((position, label, getter))
+        if not any(x is None for x in (key, setter)):
+            self._callbacks[key] = setter
 
     def _key_callback(
         self, window: Any, key: Any, scancode: Any, action: Any, mods: Any
@@ -262,7 +264,7 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         else:
             self._loop_count += self.model.opt.timestep / \
                                 (self._time_per_render * self._run_speed)
-            print(self._loop_count, self._time_per_render, self._run_speed)
+            # print("[kgd-debug] _render():", self._loop_count, self._time_per_render, self._run_speed)
 
             if self._render_every_frame:
                 self._loop_count = 1
@@ -290,7 +292,7 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
             for cb in callbacks[Callback.PRE_RENDER]:
                 cb(self.model, self.data, self)
 
-            print("[kgd-debug]", time.time(), self.data.time)
+            # print("[kgd-debug] _update():", time.time(), self.data.time)
 
             # update scene
             mujoco.mjv_updateScene(
