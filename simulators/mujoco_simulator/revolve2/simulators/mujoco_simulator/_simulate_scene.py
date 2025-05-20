@@ -98,7 +98,6 @@ def simulate_scene(
         cam.type = mujoco.mjtCamera.mjCAMERA_FIXED
         cam.fixedcamid = 0
 
-
     """Define a control interface for the mujoco simulation (used to control robots)."""
     control_interface = ControlInterfaceImpl(
         data=data, abstraction_to_mujoco_mapping=mapping

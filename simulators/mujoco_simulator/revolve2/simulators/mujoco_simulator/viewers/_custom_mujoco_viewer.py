@@ -264,7 +264,7 @@ class _MujocoViewerBackend(mujoco_viewer.MujocoViewer):  # type: ignore
         else:
             self._loop_count += self.model.opt.timestep / \
                                 (self._time_per_render * self._run_speed)
-            print("[kgd-debug] _render():", self._loop_count, self._time_per_render, self._run_speed)
+            # print("[kgd-debug] _render():", self._loop_count, self._time_per_render, self._run_speed)
 
             if self._render_every_frame:
                 self._loop_count = 1
