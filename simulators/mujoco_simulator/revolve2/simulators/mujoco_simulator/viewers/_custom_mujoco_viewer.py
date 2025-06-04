@@ -1,5 +1,6 @@
 """A custom viewer for mujoco with additional features."""
 import time
+from collections import defaultdict
 from enum import Enum
 from typing import Any, Callable
 
@@ -423,13 +424,13 @@ class CustomMujocoViewer(Viewer):
         )
         return self._viewer_backend.viewport.width, self._viewer_backend.height
 
-    def render(self, callbacks) -> int | None:
+    def render(self, callbacks=None) -> int | None:
         """
         Render the scene.
 
         :return: A cycle position if applicable.
         """
-        feedback = self._viewer_backend.render(callbacks)
+        feedback = self._viewer_backend.render(callbacks or defaultdict(list))
         return feedback
 
     def close_viewer(self) -> None:
