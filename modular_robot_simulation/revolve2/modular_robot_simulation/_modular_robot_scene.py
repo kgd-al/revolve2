@@ -65,12 +65,12 @@ class ModularRobotScene:
         """
         self._mujoco_specifics.append((parent, "site", kwargs))
 
-    def add_camera(self, **kwargs):
+    def add_camera(self, parent=None, **kwargs):
         """
         Add a camera to the scene.
         :param kwargs: The camera's parameters.
         """
-        self._mujoco_specifics.append((None, "camera", kwargs))
+        self._mujoco_specifics.append((parent, "camera", kwargs))
 
     def add_body(self, parent: Optional[str], **kwargs):
         """

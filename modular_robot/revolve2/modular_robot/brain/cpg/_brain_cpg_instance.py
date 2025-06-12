@@ -14,6 +14,10 @@ class BrainCpgInstance(BrainInstance):
     A state array that is integrated over time following the differential equation `X'=WX`.
     W is a weight matrix that is multiplied by the state array.
     The outputs of the controller are defined by the `outputs`, a list of indices for the state array.
+
+    X <-> Y
+       W
+
     """
 
     _initial_state: npt.NDArray[np.float_]
