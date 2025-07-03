@@ -3,7 +3,7 @@ from ._cpg_network_structure import CpgNetworkStructure, CpgPair
 
 
 def active_hinges_to_cpg_network_structure_neighbor(
-    active_hinges: list[ActiveHinge],
+    active_hinges: list[ActiveHinge], neighborhood=2
 ) -> tuple[CpgNetworkStructure, list[tuple[int, ActiveHinge]]]:
     """
     Create the structure of a CPG network based on a list of active hinges.
@@ -13,6 +13,7 @@ def active_hinges_to_cpg_network_structure_neighbor(
     and these are stored in the order the hinges are provided in.
 
     :param active_hinges: The active hinges to base the structure on.
+    :param neighborhood: The maximum distance for two hinges to be connected
     :returns: The created structure and a mapping between state indices and active hinges.
     """
     cpgs = CpgNetworkStructure.make_cpgs(len(active_hinges))
@@ -25,7 +26,7 @@ def active_hinges_to_cpg_network_structure_neighbor(
     for active_hinge, cpg in zip(active_hinges, cpgs):
         neighbours = [
             n
-            for n in active_hinge.neighbours(within_range=2)
+            for n in active_hinge.neighbours(within_range=neighborhood)
             if isinstance(n, ActiveHinge)
         ]
         connections = connections.union(
