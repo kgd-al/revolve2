@@ -10,6 +10,9 @@ class Cpg:
 
     index: int
 
+    def __lt__(self, other):
+        return self.index < other.index
+
 
 @dataclass(frozen=True, init=False)
 class CpgPair:
@@ -36,6 +39,11 @@ class CpgPair:
         else:
             object.__setattr__(self, "cpg_index_lowest", cpg_2)
             object.__setattr__(self, "cpg_index_highest", cpg_1)
+
+    def __lt__(self, other):
+        if self.cpg_index_lowest != other.cpg_index_lowest:
+            return self.cpg_index_lowest < other.cpg_index_lowest
+        return self.cpg_index_highest < other.cpg_index_highest
 
 
 class CpgNetworkStructure:
@@ -123,13 +131,18 @@ class CpgNetworkStructure:
         """
         assert len(params) == self.num_connections
 
+        # a = ",".join(f"{c.index}" for c in self.cpgs)
+        # b = ",".join(f"{pair.cpg_index_lowest.index} -> {pair.cpg_index_highest.index}"
+        #              for pair in self.connections)
+        # print(f"[kgd-debug] make matrix: {a}; {b}")
+
         internal_connection_weights = {
-            cpg: weight for cpg, weight in zip(self.cpgs, params[: self.num_cpgs])
+            cpg: weight for cpg, weight in zip(sorted(self.cpgs), params[: self.num_cpgs])
         }
 
         external_connection_weights = {
             pair: weight
-            for pair, weight in zip(self.connections, params[self.num_cpgs :])
+            for pair, weight in zip(sorted(self.connections), params[self.num_cpgs :])
         }
 
         return self.make_connection_weights_matrix(
